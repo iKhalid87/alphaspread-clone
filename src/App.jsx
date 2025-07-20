@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import SearchBar from './components/SearchBar';
 import StockOverview from './components/StockOverview';
 import FinancialTabs from './components/FinancialTabs';
-import ValuationCharts from './components/ValuationCharts';
+import ValuationChart from './components/ValuationChart'; // Corrected import: 'ValuationChart' (singular)
 
 // Placeholder for a detailed stock page component
 // In a real app, this would fetch data based on the symbol from the URL param
@@ -33,10 +33,43 @@ const StockDetailPage = ({ symbol }) => {
     );
   }
 
+  // State for current price and DCF value, which would be fetched within this component
+  // or passed down from a higher level if already available.
+  const [currentPrice, setCurrentPrice] = useState(null);
+  const [dcfValue, setDcfValue] = useState(null);
+
+  // Example: Fetch current price and calculate DCF here
+  // This would typically involve fetching company overview for EPS, and global quote for current price
+  // useEffect(() => {
+  //   const fetchValuationData = async () => {
+  //     // Assuming you have fetchStockOverview and fetchCompanyOverview in your api.js
+  //     // and calculateDCF in your dcf.js
+  //     try {
+  //       const globalQuoteData = await fetchStockOverview(symbol);
+  //       const companyOverviewData = await fetchCompanyOverview(symbol);
+
+  //       const price = parseFloat(globalQuoteData?.['Global Quote']?.['05. price']);
+  //       const dcfResult = calculateDCF(companyOverviewData); // Pass the overview data
+
+  //       setCurrentPrice(price);
+  //       setDcfValue(dcfResult);
+  //     } catch (err) {
+  //       console.error("Error fetching valuation data:", err);
+  //       // Handle error for valuation data specifically
+  //     }
+  //   };
+  //   if (symbol) {
+  //     fetchValuationData();
+  //   }
+  // }, [symbol]);
+
+
   return (
     <>
       <StockOverview symbol={symbol} />
-      <ValuationCharts symbol={symbol} />
+      {/* Pass currentPrice and dcfValue to ValuationChart */}
+      {/* These values need to be fetched/calculated in StockDetailPage or a parent */}
+      <ValuationChart symbol={symbol} current={currentPrice} dcf={dcfValue} />
       <FinancialTabs symbol={symbol} />
     </>
   );
