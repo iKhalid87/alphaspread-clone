@@ -20,21 +20,21 @@ export default function FinancialTabs({ symbol }) {
     const keys = Object.keys(records[0] || {}).filter(k => k !== 'fiscalDateEnding');
 
     return (
-      <table className="w-full text-left text-sm">
-        <thead>
+      <table className="w-full text-left text-sm border border-gray-700">
+        <thead className="bg-gray-800">
           <tr>
-            <th className="p-2">Date</th>
+            <th className="p-2 border-b border-gray-700">Date</th>
             {keys.map(k => (
-              <th key={k} className="p-2 whitespace-nowrap">{k}</th>
+              <th key={k} className="p-2 border-b border-gray-700 whitespace-nowrap">{k}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {records.map((r, i) => (
             <tr key={i} className="odd:bg-gray-700 even:bg-gray-800">
-              <td className="p-2 font-medium">{r.fiscalDateEnding}</td>
+              <td className="p-2 border-b border-gray-700 font-medium">{r.fiscalDateEnding}</td>
               {keys.map(k => (
-                <td key={k} className="p-2">{Number(r[k]).toLocaleString()}</td>
+                <td key={k} className="p-2 border-b border-gray-700">{Number(r[k]).toLocaleString()}</td>
               ))}
             </tr>
           ))}
@@ -46,11 +46,11 @@ export default function FinancialTabs({ symbol }) {
   return (
     <div className="mt-6">
       <div className="flex gap-4 mb-2">
-        <button onClick={() => setTab('income')} className={tab === 'income' ? 'underline' : ''}>Income</button>
-        <button onClick={() => setTab('balance')} className={tab === 'balance' ? 'underline' : ''}>Balance</button>
-        <button onClick={() => setTab('cashflow')} className={tab === 'cashflow' ? 'underline' : ''}>Cash Flow</button>
+        <button onClick={() => setTab('income')} className={tab === 'income' ? 'underline text-blue-400' : ''}>Income</button>
+        <button onClick={() => setTab('balance')} className={tab === 'balance' ? 'underline text-blue-400' : ''}>Balance</button>
+        <button onClick={() => setTab('cashflow')} className={tab === 'cashflow' ? 'underline text-blue-400' : ''}>Cash Flow</button>
       </div>
-      <div className="overflow-auto max-h-[400px]">
+      <div className="overflow-auto max-h-[400px] border border-gray-700 rounded">
         {tab === 'income' && formatTable(data, 'annualReports')}
         {tab === 'balance' && formatTable(data, 'annualReports')}
         {tab === 'cashflow' && formatTable(data, 'annualReports')}
