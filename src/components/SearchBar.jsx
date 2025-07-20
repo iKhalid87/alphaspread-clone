@@ -1,25 +1,43 @@
-// components/SearchBar.jsx - upgraded UI
-import React, { useState, useEffect } from 'react';
+// components/SearchBar.jsx
+import React, { useState, useEffect, useRef } from 'react';
 
-const staticSuggestions = [
-  { symbol: 'AAPL', name: 'Apple Inc.' },
-  { symbol: 'MSFT', name: 'Microsoft Corporation' },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.' },
-  { symbol: 'AMZN', name: 'Amazon.com, Inc.' },
-  { symbol: 'TSLA', name: 'Tesla, Inc.' },
-];
+const API_KEY = '7b1376c647msh2d95bf797c17c41p11c0c6jsn6be501ad4e40';
 
 export default function SearchBar({ onSelectSymbol }) {
   const [input, setInput] = useState('');
   const [suggestions, setSuggestions] = useState([]);
+  const timeoutRef = useRef(null);
 
   useEffect(() => {
-    if (!input.trim()) return setSuggestions([]);
-    const filtered = staticSuggestions.filter(({ symbol, name }) =>
-      symbol.toLowerCase().startsWith(input.toLowerCase()) ||
-      name.toLowerCase().includes(input.toLowerCase())
-    );
-    setSuggestions(filtered);
+    if (!input.trim()) {
+      setSuggestions([]);
+      return;
+    }
+    // Debounce API call
+    clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      fetch(
+        `https://alphavantage.p.rapidapi.com/query?function=SYMBOL_SEARCH&keywords=${input}`,
+        {
+          method: 'GET',
+          headers: {
+            'X-RapidAPI-Key': API_KEY,
+            'X-RapidAPI-Host': 'alphavantage.p.rapidapi.com',
+          },
+        }
+      )
+        .then(res => res.json())
+        .then(data => {
+          const matches = data.bestMatches || [];
+          setSuggestions(
+            matches.map(m => ({
+              symbol: m['1. symbol'],
+              name: m['2. name'],
+            }))
+          );
+        })
+        .catch(() => setSuggestions([]));
+    }, 500);
   }, [input]);
 
   const handleSelect = (sym) => {
