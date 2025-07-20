@@ -1,74 +1,100 @@
 // App.jsx
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react'; // Added useEffect import
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom'; // Added useParams import
 import SearchBar from './components/SearchBar';
 import StockOverview from './components/StockOverview';
 import FinancialTabs from './components/FinancialTabs';
 import ValuationChart from './components/ValuationChart'; // Corrected import: 'ValuationChart' (singular)
 
+// Import API functions and DCF calculation
+import { fetchStockOverview, fetchCompanyOverview } from './utils/api';
+import { calculateDCF } from './utils/dcf';
+
 // Placeholder for a detailed stock page component
-// In a real app, this would fetch data based on the symbol from the URL param
-const StockDetailPage = ({ symbol }) => {
-  // You would typically fetch all data for the symbol here or in its children
-  // and manage loading/error states.
-  const [isLoading, setIsLoading] = useState(false);
+const StockDetailPage = () => { // Removed 'symbol' prop as it will come from useParams
+  const { symbol } = useParams(); // Get symbol from URL parameters
+  const [isLoading, setIsLoading] = useState(true); // Set to true initially as we're fetching data
   const [error, setError] = useState(null);
+
+  const [currentPrice, setCurrentPrice] = useState(null);
+  const [dcfValue, setDcfValue] = useState(null);
+  const [companyOverviewForDCF, setCompanyOverviewForDCF] = useState(null); // To pass to calculateDCF
+
+  useEffect(() => {
+    const fetchValuationData = async () => {
+      if (!symbol) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // Fetch global quote for current price
+        const globalQuoteData = await fetchStockOverview(symbol);
+        const price = parseFloat(globalQuoteData?.['Global Quote']?.['05. price']);
+
+        // Fetch company overview for EPS to calculate DCF
+        const companyOverviewData = await fetchCompanyOverview(symbol);
+        setCompanyOverviewForDCF(companyOverviewData); // Store for potential re-use or direct prop passing
+
+        // Calculate DCF value using the fetched company overview data
+        // Ensure companyOverviewData is valid before passing to calculateDCF
+        const dcfResult = calculateDCF(companyOverviewData || {}); // Pass the overview data
+
+        setCurrentPrice(price);
+        setDcfValue(dcfResult);
+      } catch (err) {
+        console.error("Error fetching valuation data or calculating DCF:", err);
+        setError(err);
+        setCurrentPrice(null);
+        setDcfValue(null);
+        setCompanyOverviewForDCF(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchValuationData();
+  }, [symbol]); // Re-run effect when symbol changes
 
   // Example of a simple loading/error display
   if (isLoading) {
     return (
-      <div className="text-center py-8">
+      <div className="text-center py-8 bg-gray-800 rounded-xl shadow-lg mt-6">
         <p className="text-xl text-gray-400">Loading data for {symbol}...</p>
-        {/* You could add a spinner here */}
+        <svg className="animate-spin h-8 w-8 text-accent mx-auto mt-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-8 text-red-500">
+      <div className="text-center py-8 bg-gray-800 rounded-xl shadow-lg mt-6 text-red-500">
         <p className="text-xl">Error loading data for {symbol}: {error.message}</p>
         <p>Please try again later.</p>
       </div>
     );
   }
 
-  // State for current price and DCF value, which would be fetched within this component
-  // or passed down from a higher level if already available.
-  const [currentPrice, setCurrentPrice] = useState(null);
-  const [dcfValue, setDcfValue] = useState(null);
-
-  // Example: Fetch current price and calculate DCF here
-  // This would typically involve fetching company overview for EPS, and global quote for current price
-  // useEffect(() => {
-  //   const fetchValuationData = async () => {
-  //     // Assuming you have fetchStockOverview and fetchCompanyOverview in your api.js
-  //     // and calculateDCF in your dcf.js
-  //     try {
-  //       const globalQuoteData = await fetchStockOverview(symbol);
-  //       const companyOverviewData = await fetchCompanyOverview(symbol);
-
-  //       const price = parseFloat(globalQuoteData?.['Global Quote']?.['05. price']);
-  //       const dcfResult = calculateDCF(companyOverviewData); // Pass the overview data
-
-  //       setCurrentPrice(price);
-  //       setDcfValue(dcfResult);
-  //     } catch (err) {
-  //       console.error("Error fetching valuation data:", err);
-  //       // Handle error for valuation data specifically
-  //     }
-  //   };
-  //   if (symbol) {
-  //     fetchValuationData();
-  //   }
-  // }, [symbol]);
-
+  // If no data is available after loading (e.g., invalid symbol)
+  if (!currentPrice && !dcfValue && !companyOverviewForDCF) {
+    return (
+      <div className="text-center py-8 bg-gray-800 rounded-xl shadow-lg mt-6 text-gray-400">
+        <p className="text-xl">No data found for {symbol}.</p>
+        <p className="text-sm mt-2">Please ensure the symbol is correct or try a different one.</p>
+      </div>
+    );
+  }
 
   return (
     <>
+      {/* StockOverview, FinancialTabs, and ValuationChart now receive symbol from useParams */}
       <StockOverview symbol={symbol} />
-      {/* Pass currentPrice and dcfValue to ValuationChart */}
-      {/* These values need to be fetched/calculated in StockDetailPage or a parent */}
       <ValuationChart symbol={symbol} current={currentPrice} dcf={dcfValue} />
       <FinancialTabs symbol={symbol} />
     </>
@@ -106,7 +132,7 @@ export default function App() {
             {/* The :symbol parameter will be available via useParams in StockDetailPage */}
             <Route
               path="/stock/:symbol"
-              element={<StockDetailPage symbol={symbol} />} // Pass symbol from state or retrieve from URL param
+              element={<StockDetailPage />} // No need to pass symbol prop here, StockDetailPage uses useParams
             />
 
             {/* Fallback route for any unmatched paths */}
